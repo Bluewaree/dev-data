@@ -1,0 +1,4 @@
+bson==0.5.7
+mysqlclient
+pymongo==3.7.2
+configparser
