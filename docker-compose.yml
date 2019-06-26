@@ -40,6 +40,8 @@ services:
     volumes:
       - ./dags:/usr/local/airflow/dags
       - ./requirements.txt:/requirements.txt
+      - ./constants:/usr/local/airflow/constants
+      - ./helpers:/usr/local/airflow/helpers
     ports:
       - "8080:8080"
     command: webserver
