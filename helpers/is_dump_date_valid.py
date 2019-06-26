@@ -5,7 +5,7 @@ sys.path.append('..')
 import constants.constants as const
 
 def is_dump_date_valid(dump_date):
-    dump_date = datetime.strptime('2019-06-25', "%Y-%m-%d").date()
+    dump_date = datetime.strptime(dump_date, "%Y-%m-%d").date()
     yesterday_date = datetime.today().date() - timedelta(days=1)
     dumps_start_date = datetime.strptime(const.MONGO_DAILY_DUMPS_START_DATE, "%Y-%m-%d").date()
 
