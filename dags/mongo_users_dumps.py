@@ -18,6 +18,8 @@ from helpers.get_dump_date import get_dump_date
 from helpers.is_dump_date_valid import is_dump_date_valid
 from helpers.make_dump_url import make_dump_url
 from helpers.download_dump import download_dump
+from helpers.create_folder import create_folder
+from helpers.extract_file import extract_file
 
 ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MONGO = const.MONGO
@@ -45,5 +47,16 @@ def download_dump_process():
         destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
         download_dump(url,destination_path)
 
+def extract_file_process():
+    dump_date = get_dump_date(MONGO)
+    if is_dump_date_valid(dump_date):
+        destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}')
+        create_folder(destination_path)
+        dump_file_to_extract = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
+        extract_file(dump_file_to_extract,destination_path)
+
 # ------------- Defining Tasks ------------- 
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
+extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
+
+download_dump_task >> extract_file_task
