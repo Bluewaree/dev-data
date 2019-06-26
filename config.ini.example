@@ -1,0 +1,12 @@
+[mongodb]
+host = localhost
+port = 27017
+name = database
+
+[mysql]
+host = localhost
+port = 27017
+name = database
+
+[archives]
+ghtorrent = /ghtorrent
