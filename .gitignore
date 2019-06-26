@@ -158,3 +158,6 @@ airflow-*.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+#config
+config.ini
