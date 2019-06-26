@@ -3,6 +3,7 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime, timedelta
+from configparser import ConfigParser
 
 import os
 import sys
@@ -21,9 +22,12 @@ from helpers.download_dump import download_dump
 from helpers.create_folder import create_folder
 from helpers.extract_file import extract_file
 
+config = ConfigParser()
+config.read('config.ini')
+
 ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MONGO = const.MONGO
-MONGO_DUMPS_START_DATE = consot.DUMPS_START_DATE[MONGO]
+MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
 
 # Defining DAG's default args
 default_args = {
