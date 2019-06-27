@@ -10,7 +10,3 @@ DUMPS_START_DATE = {
 MONGO_MONTHLY_DUMPS_URLS = 'http://ghtorrent-downloads.ewi.tudelft.nl/mongo-full/'
 MONGO_DAILY_DUMPS_URL = 'http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/mongo-dump-'
 MYSQL_MONTHLY_DUMPS_URL = 'http://ghtorrent-downloads.ewi.tudelft.nl/mysql/mysql-'
-DUMPS_DATE_PATH = {
-    MONGO: 'dumps/mongo/date.txt',
-    MYSQL: 'dumps/mysql/date.txt'
-}
