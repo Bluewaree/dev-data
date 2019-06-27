@@ -21,6 +21,7 @@ from helpers.make_dump_url import make_dump_url
 from helpers.download_dump import download_dump
 from helpers.create_folder import create_folder
 from helpers.extract_file import extract_file
+from helpers.set_dump_date import set_dump_date
 
 config = ConfigParser()
 config.read('config.ini')
@@ -32,6 +33,7 @@ MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
 # Defining DAG's default args
 default_args = {
     'owner': 'airflow',
+    'wait_for_downstream': True,
     'depends_on_past': True,
     'start_date': datetime.strptime(MONGO_DUMPS_START_DATE, "%Y-%m-%d"),
     'email': ['airflow@example.com'],
@@ -42,25 +44,31 @@ default_args = {
 }
 
 # Defining DAG
-dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1))
+dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1),max_active_runs=1)
 
 def download_dump_process():
-    dump_date = get_dump_date(MONGO)
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         url = make_dump_url(dump_date,MONGO,'users')
         destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
         download_dump(url,destination_path)
 
 def extract_file_process():
-    dump_date = get_dump_date(MONGO)
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}')
         create_folder(destination_path)
         dump_file_to_extract = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
         extract_file(dump_file_to_extract,destination_path)
 
+def set_next_dump_date_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    set_dump_date(MONGO,ARCHIVES_BASE_FOLDER,dump_date)
+        
+
 # ------------- Defining Tasks ------------- 
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
+set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task
+download_dump_task >> extract_file_task >> set_next_dump_date_task
