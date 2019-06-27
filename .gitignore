@@ -161,3 +161,6 @@ dmypy.json
 
 #config
 config.ini
+
+# archives folder
+ghtorrent
