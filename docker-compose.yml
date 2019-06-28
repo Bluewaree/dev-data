@@ -28,7 +28,7 @@ services:
     ports:
       - "5432:5432"
   webserver:
-    image: puckel/docker-airflow:1.10.1   
+    build: ./ 
     restart: always
     depends_on:
       - postgres
@@ -46,7 +46,6 @@ services:
       - ./${ARCHIVES_FOLDER}:/usr/local/airflow/${ARCHIVES_FOLDER}
     ports:
       - "8080:8080"
-    command: webserver
     healthcheck:
       test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
       interval: 30s
