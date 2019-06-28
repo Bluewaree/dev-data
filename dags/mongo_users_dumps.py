@@ -23,6 +23,9 @@ from helpers.create_folder import create_folder
 from helpers.extract_file import extract_file
 from helpers.set_dump_date import set_dump_date
 
+# importing mongo class for db management
+from database.mongodb import MongoDB
+
 config = ConfigParser()
 config.read('config.ini')
 
@@ -61,6 +64,13 @@ def extract_file_process():
         dump_file_to_extract = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
         extract_file(dump_file_to_extract,destination_path)
 
+def restore_dump_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date):
+        mongodb = MongoDB()
+        bson_file = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}','dump/github','users.bson')
+        mongodb.restoreDB(bson_file,'github_users')
+
 def set_next_dump_date_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     set_dump_date(MONGO,ARCHIVES_BASE_FOLDER,dump_date)
@@ -69,6 +79,7 @@ def set_next_dump_date_process():
 # ------------- Defining Tasks ------------- 
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
+restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> set_next_dump_date_task
