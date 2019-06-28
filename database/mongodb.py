@@ -9,13 +9,19 @@ import constants.constants as const
 config = ConfigParser()
 config.read('config.ini')
 
-DATABASE_URL = f"mongodb://{config['mongodb']['host']}:{config['mongodb']['port']}/"
-DATABASE_NAME = config['mongodb']['name']
+DB_HOST = config['mongodb']['host']
+DB_PORT = config['mongodb']['port']
+DB_NAME = config['mongodb']['name']
 
 class MongoDB(object):
 
-    def __init__(self, db_name = DATABASE_NAME):
-        self._db_connection = MongoClient(DATABASE_URL)
+    def __init__(self, db_host = DB_HOST, db_port = DB_PORT):
+        self._db_host = db_host
+        self._db_port = db_port
+
+    def connect(self, db_name = DB_NAME):
+        db_url = f"mongodb://{self._db.host}:{self._db.port}/"
+        self._db_connection = MongoClient(db_url)
         self._db = self._db_connection.get_database(db_name)
     
     def restoreDB(self,bson_file,collection):
