@@ -1,7 +1,7 @@
 from pymongo import MongoClient
-from bson import BSON, decode_all
 import sys
 from configparser import ConfigParser
+import subprocess
 
 sys.path.append('..')
 import constants.constants as const
@@ -15,16 +15,28 @@ DB_NAME = config['mongodb']['name']
 
 class MongoDB(object):
 
-    def __init__(self, db_host = DB_HOST, db_port = DB_PORT):
+    def __init__(self, db_host = DB_HOST, db_port = DB_PORT, db_name = DB_NAME):
         self._db_host = db_host
         self._db_port = db_port
+        self._db_name = db_name
 
-    def connect(self, db_name = DB_NAME):
+    def connect(self):
         db_url = f"mongodb://{self._db.host}:{self._db.port}/"
         self._db_connection = MongoClient(db_url)
         self._db = self._db_connection.get_database(db_name)
     
     def restoreDB(self,bson_file,collection):
-        collection = self._db[collection] 
-        with open(bson_file, 'rb') as f:
-            collection.insert(decode_all(f.read()))
+        host = f'{self._db_host}:{self._db_port}'
+        try:
+            command = ['mongorestore',
+                '-h',
+                host,
+                '--db',
+                self._db_name,
+                '--collection',
+                collection,
+                bson_file
+            ]
+            subprocess.check_output(command)
+        except subprocess.CalledProcessError as error:
+            raise error
