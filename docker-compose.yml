@@ -42,6 +42,7 @@ services:
       - ./requirements.txt:/requirements.txt
       - ./constants:/usr/local/airflow/constants
       - ./helpers:/usr/local/airflow/helpers
+      - ./database:/usr/local/airflow/database
       - ./config.ini:/usr/local/airflow/config.ini
       - ./${ARCHIVES_FOLDER}:/usr/local/airflow/${ARCHIVES_FOLDER}
     ports:
