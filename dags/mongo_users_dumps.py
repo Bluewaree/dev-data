@@ -74,6 +74,13 @@ def restore_dump_process():
         bson_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'dump/github','users.bson')
         mongodb.restoreDB(bson_file,'github_users')
 
+def remove_dump_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date): 
+        dump_folder = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
+        dump_file = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
+        remove_dump(dump_file,dump_folder)
+
 def set_next_dump_date_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     set_dump_date(MONGO,ARCHIVES_BASE_FOLDER,dump_date)
@@ -83,6 +90,7 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> remove_dump_task >> set_next_dump_date_task
