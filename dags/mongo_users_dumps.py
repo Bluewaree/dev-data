@@ -22,6 +22,9 @@ from helpers.download_dump import download_dump
 from helpers.create_folder import create_folder
 from helpers.extract_file import extract_file
 from helpers.set_dump_date import set_dump_date
+from helpers.remove_dump import remove_dump
+from helpers.get_dump_archive_file_path import get_dump_archive_file_path
+from helpers.get_dump_folder_path import get_dump_folder_path
 
 # importing mongo class for db management
 from database.mongodb import MongoDB
@@ -47,28 +50,28 @@ default_args = {
 }
 
 # Defining DAG
-dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1),max_active_runs=1)
+dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1),max_active_runs=1) 
 
 def download_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         url = make_dump_url(dump_date,MONGO,'users')
-        destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
+        destination_path = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         download_dump(url,destination_path)
 
 def extract_file_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
-        destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}')
+        destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         create_folder(destination_path)
-        dump_file_to_extract = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}.tar.gz')
+        dump_file_to_extract = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         extract_file(dump_file_to_extract,destination_path)
 
 def restore_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         mongodb = MongoDB()
-        bson_file = os.path.join(ARCHIVES_BASE_FOLDER,f'mongo-dump-{dump_date}','dump/github','users.bson')
+        bson_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'dump/github','users.bson')
         mongodb.restoreDB(bson_file,'github_users')
 
 def set_next_dump_date_process():
