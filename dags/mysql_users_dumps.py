@@ -22,6 +22,9 @@ from helpers.download_dump import download_dump
 from helpers.create_folder import create_folder
 from helpers.extract_file import extract_file
 from helpers.set_dump_date import set_dump_date
+from helpers.remove_dump import remove_dump
+from helpers.get_dump_archive_file_path import get_dump_archive_file_path
+from helpers.get_dump_folder_path import get_dump_folder_path
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -52,26 +55,23 @@ dag = DAG('mysql_users_dump', default_args=default_args, schedule_interval='@mon
 
 def download_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    if is_dump_date_valid(dump_date):
-        url = make_dump_url(dump_date,MYSQL)
-        destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mysql-dump-{dump_date}.tar.gz')
-        download_dump(url,destination_path)
+    url = make_dump_url(dump_date,MYSQL)
+    destination_path = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
+    download_dump(url,destination_path)
 
 def extract_file_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    if is_dump_date_valid(dump_date):
-        destination_path = os.path.join(ARCHIVES_BASE_FOLDER,f'mysql-dump-{dump_date}')
-        create_folder(destination_path)
-        dump_file_to_extract = os.path.join(ARCHIVES_BASE_FOLDER,f'mysql-dump-{dump_date}.tar.gz')
-        extract_file(dump_file_to_extract,destination_path)
+    destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date) 
+    create_folder(destination_path)
+    dump_file_to_extract = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
+    extract_file(dump_file_to_extract,destination_path)
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    if is_dump_date_valid(dump_date):
-        mysql = MySQL()
-        for mysql_table in MYSQL_TABLES:
-            csv_file = os.path.join(ARCHIVES_BASE_FOLDER,f'mysql-dump-{dump_date}','dump/github','{0}.csv'.format(mysql_table))
-            mysql.restoreDB(csv_file,mysql_table)
+    mysql = MySQL()
+    for mysql_table in MYSQL_TABLES:
+        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump/github','{0}.csv'.format(mysql_table))
+        mysql.restoreDB(csv_file,mysql_table)
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
@@ -79,9 +79,9 @@ def set_next_dump_date_process():
 
 
 # ------------- Defining Tasks -------------
-#download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
-#extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
+download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
+extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-restore_dump_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> set_next_dump_date_task
