@@ -25,6 +25,7 @@ from helpers.set_dump_date import set_dump_date
 from helpers.remove_dump import remove_dump
 from helpers.get_dump_archive_file_path import get_dump_archive_file_path
 from helpers.get_dump_folder_path import get_dump_folder_path
+from helpers.get_mysql_table_names import get_mysql_table_names
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -35,7 +36,6 @@ config.read('config.ini')
 ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MYSQL = const.MYSQL
 MYSQL_DUMPS_START_DATE = const.DUMPS_START_DATE[MYSQL]
-MYSQL_TABLES = const.MYSQL_TABLES
 
 # Defining DAG's default args
 default_args = {
@@ -69,8 +69,9 @@ def extract_file_process():
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL()
-    for mysql_table in MYSQL_TABLES:
-        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump/github','{0}.csv'.format(mysql_table))
+    mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
+    for mysql_table in mysql_tables:
+        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump','{0}.csv'.format(mysql_table))
         mysql.restoreDB(csv_file,mysql_table)
 
 def set_next_dump_date_process():
