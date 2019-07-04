@@ -73,7 +73,6 @@ RUN set -ex \
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
 COPY schema.sql /schema.sql
-COPY users.csv ${AIRFLOW_USER_HOME}/users.csv
 
 RUN ["chmod", "+x", "/entrypoint.sh"]
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
