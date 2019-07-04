@@ -20,3 +20,16 @@ class MySQL(object):
                         lines terminated by '\\n' \
                         ignore 1 rows \
                         ".format(csv_file, table_name))
+    def update_users(self, users):
+        cursor = self._db.cursor()
+        query = ""
+        email_case = "email = case"
+        name_case = "name = case"
+        for user in users:
+            user = user['data']
+            email_case += f" when login = {user['login']} then {user['email']}"
+            name_case += f" when login = {user['login']} then {user['name']}"
+        email_case += " else email end"
+        name_case += " else name end"
+        query = f"update users set {email_case}, {name_case}"
+        cursor.execute(query)
