@@ -13,9 +13,10 @@ class MySQL(object):
         self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = MYSQL_DB['name'])
     def restoreDB(self, csv_file, table_name):
         cursor = self._db.cursor()
-        cursor.execute("load data local infile '~/ghtorrent/{0}' \
+        cursor.execute("set autocommit = 0;set unique_checks = 0;set foreign_key_checks = 0;set sql_log_bin=0;")
+        cursor.execute("load data local infile '~/{0}' \
                         into table {1} \
-                        fields terminated by '|' \
+                        fields terminated by ',' \
                         enclosed by '\"' \
                         lines terminated by '\\n' \
                         ignore 1 rows \
