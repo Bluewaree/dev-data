@@ -26,6 +26,7 @@ from helpers.remove_dump import remove_dump
 from helpers.get_dump_archive_file_path import get_dump_archive_file_path
 from helpers.get_dump_folder_path import get_dump_folder_path
 from helpers.get_mysql_table_names import get_mysql_table_names
+from helpers.separate_restoration_mysql import separate_restoration
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -61,7 +62,7 @@ def download_dump_process():
 
 def extract_file_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date) 
+    destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
     create_folder(destination_path)
     dump_file_to_extract = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
     extract_file(dump_file_to_extract,destination_path)
@@ -71,11 +72,8 @@ def restore_dump_process():
     mysql = MySQL(dump_date)
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
     mysql.optimize_load()
-    for mysql_table in mysql_tables:
-        print(f'-------------- Processing {mysql_table} ----------------')
-        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump','{0}.csv'.format(mysql_table))
-        mysql.restore_db(csv_file,mysql_table)
-        print(f'-------------- Processing ended ----------------')
+    destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
+    separate_restoration(mysql_tables, destination_path)
     print("----------------- Committing -----------------")
     mysql.commit()
 
