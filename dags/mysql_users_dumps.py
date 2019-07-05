@@ -68,11 +68,15 @@ def extract_file_process():
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql = MySQL()
+    mysql = MySQL(dump_date)
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
     for mysql_table in mysql_tables:
+        print(f'-------------- Processing {mysql_table} ----------------')
         csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump','{0}.csv'.format(mysql_table))
         mysql.restoreDB(csv_file,mysql_table)
+        print(f'-------------- Processing ended ----------------')
+    print("----------------- Committing -----------------")
+    mysql.commit()
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
