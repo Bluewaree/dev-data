@@ -26,11 +26,14 @@ class MySQL(object):
         query = ""
         email_case = "email = case"
         name_case = "name = case"
+        logins = []
         for user in users:
             user = user['data']
             email_case += f" when login = {user['login']} then {user['email']}"
             name_case += f" when login = {user['login']} then {user['name']}"
+            logins.append(user['login'])
         email_case += " else email end"
         name_case += " else name end"
-        query = f"update users set {email_case}, {name_case}"
+        logins = ','.join(logins)
+        query = f"update users set {email_case}, {name_case} where login in ({logins})"
         cursor.execute(query)
