@@ -40,3 +40,31 @@ class MongoDB(object):
             subprocess.check_output(command)
         except subprocess.CalledProcessError as error:
             raise error
+    def retrieve_users(self):
+        pipeline = [
+                {$group:{_id:"$login",count:{$sum:1},"data": { "$addToSet": "$$ROOT" }}},
+                { "$unwind": "$data" },
+                { "$project": {
+                    "_id": 0,
+                    "data": 1,
+                    "count":1,
+                    "isDuplicate": {"$gte": ["$count":2]},
+                    "isNewest": {"$eq":["updated_at",{"$max":"updated_at"}]}
+                }},
+                { "$match": { "isNewest":true }}
+        ]
+        users = self._db.users.aggregate(pipeline, allowDiskUse=True)
+        pipeline = [
+                {$group:{_id:"$login",count:{$sum:1},"data": { "$addToSet": "$$ROOT" }}},
+                { "$unwind": "$data" },
+                { "$project": {
+                    "_id": 0,
+                    "data": 1,
+                    "count":1,
+                    "isDuplicate": {"$lt": ["$count":2]},
+                    "isNewest": {"$eq":["updated_at",{"$max":"updated_at"}]}
+                }},
+                { "$match": { "isNewest":true }}
+        ]
+        users += self._db.users.aggregate(pipeline, allowDiskUse=True)
+        return users

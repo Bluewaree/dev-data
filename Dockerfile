@@ -71,8 +71,7 @@ RUN set -ex \
         /usr/share/doc-base 
 
 COPY script/entrypoint.sh /entrypoint.sh
-COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
-COPY schema.sql /schema.sql
+COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.config
 
 RUN ["chmod", "+x", "/entrypoint.sh"]
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
