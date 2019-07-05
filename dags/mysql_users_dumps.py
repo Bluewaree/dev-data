@@ -71,6 +71,7 @@ def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
+    mysql.optimize_load()
     destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
     separate_restoration(mysql_tables, destination_path)
     print("----------------- Committing -----------------")
