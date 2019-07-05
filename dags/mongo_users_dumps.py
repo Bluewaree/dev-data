@@ -72,7 +72,7 @@ def restore_dump_process():
     if is_dump_date_valid(dump_date):
         mongodb = MongoDB()
         bson_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'dump/github','users.bson')
-        mongodb.restoreDB(bson_file,'github_users')
+        mongodb.restore_db(bson_file,'github_users')
 
 def remove_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)

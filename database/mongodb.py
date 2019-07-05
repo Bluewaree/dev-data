@@ -25,7 +25,7 @@ class MongoDB(object):
         self._db_connection = MongoClient(db_url)
         self._db = self._db_connection.get_database(db_name)
     
-    def restoreDB(self,bson_file,collection):
+    def restore_db(self,bson_file,collection):
         host = f'{self._db_host}:{self._db_port}'
         try:
             command = ['mongorestore',
