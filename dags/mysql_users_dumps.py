@@ -111,8 +111,8 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
-restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
-create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag, trigger_rule='all_done')
+restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag, trigger_rule='all_done')
+create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
 download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> set_next_dump_date_task
