@@ -9,13 +9,20 @@ MYSQL_DB = config['mysql']
 DATABASE_NAME = MYSQL_DB['name']
 
 class MySQL(object):
-    def __init__(self,dump_date,db_name = DATABASE_NAME):
-        db_name += f"-{dump_date}"
-        print(f"--------------- Connection with db {db_name} ------------------")
-        self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = db_name)
+    def __init__(self,dump_date = None):
+
+        if dump_date is not None:
+            db_name = f"{DATABASE_NAME}-{dump_date}"
+            print(f"--------------- Connection with db {db_name} ------------------")
+            self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = db_name)
+        else :
+            self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'])
+
     def optimize_load(self):
         cursor = self._db.cursor()
         cursor.execute("set autocommit = 0;set unique_checks = 0;set foreign_key_checks = 0;set sql_log_bin=0;")
+        cursor.close() 
+
     def restore_db(self, csv_file, table_name):
         cursor = self._db.cursor()
         cursor.execute("load data local infile '{0}' \
@@ -24,8 +31,11 @@ class MySQL(object):
                         enclosed by '\"' \
                         lines terminated by '\\n'; \
                         ".format(csv_file, table_name))
+        cursor.close() 
+
     def commit(self):
         self._db.commit()
+
     def update_users(self, users):
         cursor = self._db.cursor()
         query = ""
@@ -42,3 +52,9 @@ class MySQL(object):
         logins = ','.join(logins)
         query = f"update users set {email_case}, {name_case} where login in ({logins})"
         cursor.execute(query)
+        cursor.close() 
+        
+    def execute_file(self,file_to_execute):
+        cursor = self._db.cursor()
+        cursor.execute(file_to_execute)
+        cursor.close() 
