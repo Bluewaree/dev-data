@@ -27,6 +27,8 @@ from helpers.get_dump_archive_file_path import get_dump_archive_file_path
 from helpers.get_dump_folder_path import get_dump_folder_path
 from helpers.get_mysql_table_names import get_mysql_table_names
 from helpers.separate_restoration_mysql import separate_restoration
+from helpers.change_content_in_file import change_content_in_file
+from helpers.copy_file import copy_file
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -36,6 +38,8 @@ config.read('config.ini')
 
 ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MYSQL = const.MYSQL
+SCHEMA = const.SCHEMA
+INDEXES = const.INDEXES
 MYSQL_DUMPS_START_DATE = const.DUMPS_START_DATE[MYSQL]
 
 # Defining DAG's default args
@@ -67,13 +71,27 @@ def extract_file_process():
     dump_file_to_extract = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
     extract_file(dump_file_to_extract,destination_path)
 
+def create_schema_process():
+    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    dump_schema_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump',f'{SCHEMA}.sql')
+    global_schema_file = f'/{SCHEMA}.sql'
+    change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_schema_file)
+    copy_file(dump_schema_file,global_schema_file)
+    schema_file = open(global_schema_file, 'r').read()
+
+    mysql = MySQL()
+    mysql.execute_file(schema_file)
+
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
     mysql.optimize_load()
-    destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
-    separate_restoration(mysql_tables, destination_path)
+    for mysql_table in mysql_tables:
+        print(f'-------------- Processing {mysql_table} ----------------')
+        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump','{0}.csv'.format(mysql_table))
+        mysql.restore_db(csv_file,mysql_table)
+        print(f'-------------- Processing ended ----------------')
     print("----------------- Committing -----------------")
     mysql.commit()
 
@@ -85,7 +103,8 @@ def set_next_dump_date_process():
 # ------------- Defining Tasks -------------
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
-restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
+restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag, trigger_rule='all_done')
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> set_next_dump_date_task
