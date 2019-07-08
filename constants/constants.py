@@ -11,3 +11,4 @@ MONGO_MONTHLY_DUMPS_URLS = 'http://ghtorrent-downloads.ewi.tudelft.nl/mongo-full
 MONGO_DAILY_DUMPS_URL = 'http://ghtorrent-downloads.ewi.tudelft.nl/mongo-daily/mongo-dump-'
 MYSQL_MONTHLY_DUMPS_URL = 'http://ghtorrent-downloads.ewi.tudelft.nl/mysql/mysql-'
 SCHEMA="schema"
+INDEXES="indexes"
