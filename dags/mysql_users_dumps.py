@@ -81,14 +81,6 @@ def create_schema_process():
     mysql = MySQL()
     mysql.execute_file(schema_file)
 
-def create_indexes_process():
-    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    dump_indexes_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump',f'{INDEXES}.sql')
-    change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_indexes_file)
-    indexes_files = open(dump_indexes_file, 'r').read()
-    mysql = MySQL(dump_date)
-    mysql.execute_file(indexes_files)
-
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
@@ -102,6 +94,14 @@ def restore_dump_process():
     print("----------------- Committing -----------------")
     mysql.commit()
 
+def create_indexes_process():
+    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    dump_indexes_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump',f'{INDEXES}.sql')
+    change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_indexes_file)
+    indexes_files = open(dump_indexes_file, 'r').read()
+    mysql = MySQL(dump_date)
+    mysql.execute_file(indexes_files)
+
 def set_next_dump_date_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     set_dump_date(MYSQL,ARCHIVES_BASE_FOLDER,dump_date)
@@ -111,8 +111,8 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
-create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag, trigger_rule='all_done')
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag, trigger_rule='all_done')
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> create_schema_task >> create_indexes_task >> restore_dump_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> set_next_dump_date_task
