@@ -29,6 +29,7 @@ from helpers.get_mysql_table_names import get_mysql_table_names
 from helpers.separate_restoration_mysql import separate_restoration
 from helpers.change_content_in_file import change_content_in_file
 from helpers.copy_file import copy_file
+from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -73,7 +74,7 @@ def extract_file_process():
 
 def create_schema_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    dump_schema_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump',f'{SCHEMA}.sql')
+    dump_schema_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),f'{SCHEMA}.sql')
     global_schema_file = f'/{SCHEMA}.sql'
     change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_schema_file)
     copy_file(dump_schema_file,global_schema_file)
@@ -84,11 +85,11 @@ def create_schema_process():
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
-    mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump'))
+    mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)))
     mysql.optimize_load()
     for mysql_table in mysql_tables:
         print(f'-------------- Processing {mysql_table} ----------------')
-        csv_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump','{0}.csv'.format(mysql_table))
+        csv_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'{0}.csv'.format(mysql_table))
         mysql.restore_db(csv_file,mysql_table)
         print(f'-------------- Processing ended ----------------')
     print("----------------- Committing -----------------")
@@ -96,13 +97,24 @@ def restore_dump_process():
 
 def create_indexes_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    dump_indexes_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'dump',f'{INDEXES}.sql')
+    dump_indexes_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),f'{INDEXES}.sql')
     change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_indexes_file)
     indexes_files = open(dump_indexes_file, 'r').read()
     mysql = MySQL(dump_date)
     mysql.execute_file(indexes_files)
 
+def restore_old_users_data_process():
+    print(test)
+    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    mysql = MySQL(f"{dump_date}-01")
+    users = mysql.get_all_users()
+    mysql = MySQL(f"{dump_date}-02")
+    mysql.update_users(users,MYSQL)
+    print("----------------- Committing -----------------")
+    mysql.commit()
+
 def set_next_dump_date_process():
+    print(test)
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     set_dump_date(MYSQL,ARCHIVES_BASE_FOLDER,dump_date)
 
@@ -113,6 +125,7 @@ extract_file_task = PythonOperator(task_id='extract-file', python_callable=extra
 create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag, trigger_rule='all_done')
 create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag)
+restore_old_users_data_task = PythonOperator(task_id='resrtore-old-users-data', python_callable=restore_old_users_data_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> restore_old_users_data_task >> set_next_dump_date_task
