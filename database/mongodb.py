@@ -19,11 +19,13 @@ class MongoDB(object):
         self._db_host = db_host
         self._db_port = db_port
         self._db_name = db_name
+        self._db_connection = ""
+        self._db = ""
 
     def connect(self):
-        db_url = f"mongodb://{self._db.host}:{self._db.port}/"
-        self._db_connection = MongoClient(db_url)
-        self._db = self._db_connection.get_database(db_name)
+        db_url = f"mongodb://{self._db_host}:{self._db_port}/"
+        self._db_connection = MongoClient(db_url)       
+        self._db = self._db_connection[self._db_name]
     
     def restore_db(self,bson_file,collection):
         host = f'{self._db_host}:{self._db_port}'
@@ -40,31 +42,32 @@ class MongoDB(object):
             subprocess.check_output(command)
         except subprocess.CalledProcessError as error:
             raise error
+
     def retrieve_users(self):
         pipeline = [
-                {$group:{_id:"$login",count:{$sum:1},"data": { "$addToSet": "$$ROOT" }}},
+                {"$group":{"_id":"$login","count":{"$sum":1},"data": { "$addToSet": "$$ROOT" }}},
                 { "$unwind": "$data" },
                 { "$project": {
                     "_id": 0,
                     "data": 1,
                     "count":1,
-                    "isDuplicate": {"$gte": ["$count":2]},
+                    "isDuplicate": {"$gte": ["$count",2]},
                     "isNewest": {"$eq":["updated_at",{"$max":"updated_at"}]}
                 }},
-                { "$match": { "isNewest":true }}
+                { "$match": { "isDuplicate": True,"isNewest":True }}
         ]
-        users = self._db.users.aggregate(pipeline, allowDiskUse=True)
+        users = list(self._db.github_users.aggregate(pipeline, allowDiskUse=True))
         pipeline = [
-                {$group:{_id:"$login",count:{$sum:1},"data": { "$addToSet": "$$ROOT" }}},
+                {"$group":{"_id":"$login","count":{"$sum":1},"data": { "$addToSet": "$$ROOT" }}},
                 { "$unwind": "$data" },
                 { "$project": {
                     "_id": 0,
                     "data": 1,
                     "count":1,
-                    "isDuplicate": {"$lt": ["$count":2]},
+                    "isDuplicate": {"$lt": ["$count",2]},
                     "isNewest": {"$eq":["updated_at",{"$max":"updated_at"}]}
                 }},
-                { "$match": { "isNewest":true }}
+                { "$match": { "isDuplicate": True,"isNewest":True }}
         ]
-        users += self._db.users.aggregate(pipeline, allowDiskUse=True)
+        users += list(self._db.github_users.aggregate(pipeline, allowDiskUse=True))
         return users
