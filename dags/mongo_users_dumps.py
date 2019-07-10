@@ -25,6 +25,8 @@ from helpers.set_dump_date import set_dump_date
 from helpers.remove_dump import remove_dump
 from helpers.get_dump_archive_file_path import get_dump_archive_file_path
 from helpers.get_dump_folder_path import get_dump_folder_path
+from helpers.get_previous_dump_date import get_previous_dump_date
+from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
 
 # importing mongo class for db management
 from database.mongodb import MongoDB
@@ -34,6 +36,7 @@ config.read('config.ini')
 
 ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MONGO = const.MONGO
+MYSQL = const.MYSQL
 MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
 
 # Defining DAG's default args
@@ -71,8 +74,18 @@ def restore_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         mongodb = MongoDB()
-        bson_file = os.path.join(get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'dump/github','users.bson')
+        bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'users.bson')
         mongodb.restore_db(bson_file,'github_users')
+
+def update_mysql_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date):
+        mongodb = MongoDB()
+        mongodb.connect()
+        users = mongodb.retrieve_users()
+        previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+        mysql = MySQL(previous_mysql_dump_date)
+        mysql.update_users(users,MONGO)
 
 def remove_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -80,6 +93,12 @@ def remove_dump_process():
         dump_folder = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         dump_file = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         remove_dump(dump_file,dump_folder)
+
+def drop_database_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date): 
+        mongodb = MongoDB()
+        MongoDB.drop_database()
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -90,7 +109,9 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+update_mysql_task = PythonOperator(task_id='update-mysql', python_callable=update_mysql_process, dag=dag)
 remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
+drop_database_task = PythonOperator(task_id='drop-database', python_callable=drop_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> remove_dump_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
