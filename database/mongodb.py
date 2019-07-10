@@ -71,3 +71,6 @@ class MongoDB(object):
         ]
         users += list(self._db.github_users.aggregate(pipeline, allowDiskUse=True))
         return users
+    
+    def drop_database(self):
+        self._db_connection.drop_database(self._db_name)
