@@ -95,6 +95,28 @@ class MongoDB(object):
             dups.pop(0)
             to_remove += dups
         self._db.github_users.remove({"_id":{"$in":to_remove}})
+    
+    def export_users_schema(self,export_destination,collection):
+        host = f'{self._db_host}:{self._db_port}'
+        try:
+            command = ['mongoexport',
+                '--host',
+                host,
+                '--db',
+                self._db_name,
+                '--collection',
+                collection,
+                '--type=csv',
+                '--out',
+                export_destination,
+                '--fields',
+                'login,name,email',
+                '--forceTableScan'
+            ]
+            subprocess.check_output(command)
+        except subprocess.CalledProcessError as error:
+            raise error
+        
 
     def disconnect(self):
         self._db_connection.close()
