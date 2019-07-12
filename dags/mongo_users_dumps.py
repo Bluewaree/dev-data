@@ -39,6 +39,8 @@ ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
 MONGO = const.MONGO
 MYSQL = const.MYSQL
 MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
+USERS_SCHEMA = const.MONGO_USERS_GITHUB_SCHEMA
+USERS= const.USERS
 
 # Defining DAG's default args
 default_args = {
@@ -59,7 +61,7 @@ dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timed
 def download_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
-        url = make_dump_url(dump_date,MONGO,'users')
+        url = make_dump_url(dump_date,MONGO,USERS)
         destination_path = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         download_dump(url,destination_path)
 
@@ -75,8 +77,8 @@ def restore_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         mongodb = MongoDB()
-        bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'users.bson')
-        mongodb.restore_db(bson_file,'github_users')
+        bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),f'{USERS}.bson')
+        mongodb.restore_db(bson_file,USERS_SCHEMA)
 
 def remove_duplicates_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -85,6 +87,13 @@ def remove_duplicates_process():
         mongodb.connect()
         mongodb.remove_duplicates()
         mongodb.disconnect()
+
+def export_users_schema_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date):        
+        export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{USERS}-{dump_date}.csv")
+        mongodb = MongoDB()
+        mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)        
 
 def update_mysql_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -119,9 +128,10 @@ download_dump_task = PythonOperator(task_id='download-dump', python_callable=dow
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 remove_duplicates_task = PythonOperator(task_id='remove_duplicates', python_callable=remove_duplicates_process, dag=dag)
+export_users_schema_task = PythonOperator(task_id='export_users_schema', python_callable=export_users_schema_process, dag=dag)
 update_mysql_task = PythonOperator(task_id='update-mysql', python_callable=update_mysql_process, dag=dag)
 remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
 drop_database_task = PythonOperator(task_id='drop-database', python_callable=drop_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> export_users_schema_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
