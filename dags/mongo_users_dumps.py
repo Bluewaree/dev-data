@@ -30,6 +30,7 @@ from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
 
 # importing mongo class for db management
 from database.mongodb import MongoDB
+from database.mysql import MySQL
 
 config = ConfigParser()
 config.read('config.ini')
@@ -77,6 +78,14 @@ def restore_dump_process():
         bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),'users.bson')
         mongodb.restore_db(bson_file,'github_users')
 
+def remove_duplicates_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date):
+        mongodb = MongoDB()
+        mongodb.connect()
+        mongodb.remove_duplicates()
+        mongodb.disconnect()
+
 def update_mysql_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
@@ -109,9 +118,10 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+remove_duplicates_task = PythonOperator(task_id='remove_duplicates', python_callable=remove_duplicates_process, dag=dag)
 update_mysql_task = PythonOperator(task_id='update-mysql', python_callable=update_mysql_process, dag=dag)
 remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
 drop_database_task = PythonOperator(task_id='drop-database', python_callable=drop_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
