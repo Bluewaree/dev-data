@@ -74,3 +74,28 @@ class MongoDB(object):
     
     def drop_database(self):
         self._db_connection.drop_database(self._db_name)
+    
+    def remove_duplicates(self):
+        pipeline = [
+                {"$group":{"_id":"$login","count":{"$sum":1},"dups": {"$addToSet": "$_id"}}},
+                { "$project": {
+                    "_id": 0,
+                    "updated_at":1,
+                    "count":1,
+                    "dups": 1,
+                    "isDuplicate": {"$gt": ["$count",1]}
+                }},
+                { "$match": { "isDuplicate": True }},
+                { "$sort": {"updated_at":-1} }
+        ]
+        users = list(self._db.github_users.aggregate(pipeline, allowDiskUse=True))
+        to_remove = []
+        for user in users:
+            dups = user['dups']
+            dups.pop(0)
+            to_remove += dups
+        self._db.github_users.remove({"_id":{"$in":to_remove}})
+
+    def disconnect(self):
+        self._db_connection.close()
+        
