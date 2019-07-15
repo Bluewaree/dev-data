@@ -41,6 +41,8 @@ MYSQL = const.MYSQL
 MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
 USERS_SCHEMA = const.MONGO_USERS_GITHUB_SCHEMA
 USERS= const.USERS
+USERS_TEMP= const.USERS_TEMP
+SCHEMA = const.SCHEMA
 
 # Defining DAG's default args
 default_args = {
@@ -91,9 +93,18 @@ def remove_duplicates_process():
 def export_users_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):        
-        export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{USERS}-{dump_date}.csv")
+        export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
         mongodb = MongoDB()
-        mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)        
+        mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)
+
+def create_mysql_schema_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date):
+        schema_file = f'/{USERS_TEMP}-{SCHEMA}.sql'
+        schema_file = open(schema_file, 'r').read()
+        mysql = MySQL()
+        mysql.execute_file(schema_file)
+        mysql.disconnect()
 
 def update_mysql_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -129,9 +140,10 @@ extract_file_task = PythonOperator(task_id='extract-file', python_callable=extra
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 remove_duplicates_task = PythonOperator(task_id='remove_duplicates', python_callable=remove_duplicates_process, dag=dag)
 export_users_schema_task = PythonOperator(task_id='export_users_schema', python_callable=export_users_schema_process, dag=dag)
+create_mysql_schema_task = PythonOperator(task_id='create_mysql_schema', python_callable=create_mysql_schema_process, dag=dag)
 update_mysql_task = PythonOperator(task_id='update-mysql', python_callable=update_mysql_process, dag=dag)
 remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
 drop_database_task = PythonOperator(task_id='drop-database', python_callable=drop_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> export_users_schema_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> export_users_schema_task >> create_mysql_schema_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
