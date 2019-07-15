@@ -96,6 +96,10 @@ class MongoDB(object):
             to_remove += dups
         self._db.github_users.remove({"_id":{"$in":to_remove}})
     
+    def remove_documents_with_null_values(self):
+        query = {"name": { "$in": [ None, "" ] },"email": { "$in": [ None, "" ] }}
+        self._db.github_users.delete_many(query)
+    
     def export_users_schema(self,export_destination,collection):
         host = f'{self._db_host}:{self._db_port}'
         try:
