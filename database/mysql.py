@@ -30,7 +30,7 @@ class MySQL(object):
         cursor.execute("set autocommit = 0;set unique_checks = 0;set foreign_key_checks = 0;set sql_log_bin=0;")
         cursor.close() 
 
-    def restore_db(self, csv_file, table_name,lines_to_ignore=0):
+    def restore_db(self, csv_file, table_name):
         cursor = self._db.cursor()
         cursor.execute("SELECT @@foreign_key_checks;")
         print(cursor.fetchone())
@@ -39,39 +39,20 @@ class MySQL(object):
                         fields terminated by ',' \
                         enclosed by '\"' \
                         lines terminated by '\\n'; \
-                        ignore {2} lines \
-                        ".format(csv_file, table_name,lines_to_ignore))
+                        ".format(csv_file, table_name))
         cursor.close() 
 
     def commit(self):
         self._db.commit()
 
-    def update_users(self, users, database_documents_type):
+    def update_users(self, users_temp_schema):
         cursor = self._db.cursor()
-        cursor.execute("SET GLOBAL max_allowed_packet=1073741824;SET GLOBAL range_optimizer_max_mem_size=0;")
-        query = ""
-        email_case = "email = case"
-        name_case = "name = case"
-        logins = []
-        for user in users:
-            if database_documents_type == const.MONGO:
-                user = user['data']
-            login = format_string(user['login'])
-            if 'email' in user:
-                email = format_string(user['email'])
-                email_case += f" when login = %s then %s" % (login,email)
-            if 'name' in user:
-                name = format_string(user['name'])
-                name_case += f" when login = %s then %s" % (login,name)
-            logins.append(login)
-        email_case += " else email end"
-        name_case += " else name end"
-        logins = ','.join(logins)
-        query = f"update users set {email_case}, {name_case} where login in ({logins})"
-        print("---- Query Ready ------")
-        cursor.execute(query)
-        print("---- Query ended -----")
-        cursor.close() 
+        cursor.execute(" \
+            UPDATE users as u JOIN `{0}`.`users` as u_temp \
+            ON u.login = u_temp.login \
+            SET u.email = u_temp.email, u.name = u_temp.name; \
+        ".format(users_temp_schema))
+        cursor.close()
         
     def execute_file(self,file_to_execute):
         cursor = self._db.cursor()
