@@ -13,11 +13,10 @@ def get_previous_dump_date(database_type,archives_base_folder):
 
     if os.path.exists(dump_date_file_path): 
         with open(dump_date_file_path) as file:
-            dump_date = file.readline()
-    
-    if database_type==const.MONGO: # Yesterday if mongo
-        previous_dump_date = datetime.strptime(dump_date, "%Y-%m-%d").date() - relativedelta(days=1)
-    else: # Last month if mysql
-        previous_dump_date = (datetime.strptime(dump_date, "%Y-%m-%d").date() - relativedelta(months=1)).replace(day=1)
+            dump_date = file.readline()    
+            if database_type==const.MONGO: # Yesterday if mongo
+                previous_dump_date = datetime.strptime(dump_date, "%Y-%m-%d").date() - relativedelta(days=1)
+            else: # Last month if mysql
+                previous_dump_date = (datetime.strptime(dump_date, "%Y-%m-%d").date() - relativedelta(months=1)).replace(day=1)
 
     return dump_date
