@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 import MySQLdb
 import sys
+import re
 
 sys.path.append('..')
 import constants.constants as const
@@ -70,7 +71,22 @@ class MySQL(object):
     def execute_file(self,file_to_execute):
         cursor = self._db.cursor()
         cursor.execute(file_to_execute)
-        cursor.close() 
+        cursor.close()
+
+    def execute_schema_file(self,file_to_execute):
+        cursor = self._db.cursor()
+        statement = ""
+
+        for line in open(file_to_execute):
+            if re.match(r'--', line):  # ignore sql comment lines
+                continue
+            if not re.search(r';$', line):  # keep appending lines that don't end in ';'
+                statement = statement + line
+            else:  # when you get a line ending in ';' then exec statement and reset for next statement
+                statement = statement + line                
+                cursor.execute(statement)
+                statement = ""
+        cursor.close()
 
     def get_all_users(self):
         cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
