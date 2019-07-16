@@ -122,17 +122,17 @@ def restore_users_schema_process():
         mysql.optimize_load()
         mysql.restore_users_schema(csv_file,USERS)
         mysql.commit()
+        mysql.create_index_users_login()
         mysql.disconnect()
 
 def update_mysql_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
-        mongodb = MongoDB()
-        mongodb.connect()
-        users = mongodb.retrieve_users()
         previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
         mysql = MySQL(previous_mysql_dump_date)
-        mysql.update_users(users,MONGO)
+        mysql.update_users(f"ghtorrent-{USERS_TEMP}")
+        mysql.commit()
+        mysql.disconnect()
 
 def remove_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
