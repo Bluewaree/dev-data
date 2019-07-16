@@ -42,6 +42,19 @@ class MySQL(object):
                         ".format(csv_file, table_name))
         cursor.close() 
 
+    def restore_users_schema(self, csv_file, table_name):
+        cursor = self._db.cursor()
+        cursor.execute("load data local infile '{0}' \
+                        into table {1} \
+                        fields terminated by ',' \
+                        optionally enclosed by '\"' \
+                        escaped BY '' \
+                        lines terminated by '\\n' \
+                        ignore 1 lines \
+                        (login,@name,@email) SET name=nullif(@name,''),email = nullif(@email,'') \
+                        ".format(csv_file, table_name))
+        cursor.close() 
+
     def commit(self):
         self._db.commit()
 
