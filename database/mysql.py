@@ -110,5 +110,10 @@ class MySQL(object):
         cursor.execute("CREATE UNIQUE INDEX `login` ON `users` (`login` ASC)  COMMENT ''")
         cursor.close()
 
+    def drop_database(self,db_name):
+        cursor = self._db.cursor()
+        cursor.execute("DROP DATABASE `{0}`".format(db_name))
+        cursor.close()
+
     def disconnect(self):
         self._db.close()
