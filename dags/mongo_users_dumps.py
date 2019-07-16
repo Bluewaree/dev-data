@@ -81,6 +81,7 @@ def restore_dump_process():
         mongodb = MongoDB()
         bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),f'{USERS}.bson')
         mongodb.restore_db(bson_file,USERS_SCHEMA)
+        mongodb.disconnect()
 
 def remove_duplicates_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -104,6 +105,7 @@ def export_users_schema_process():
         export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
         mongodb = MongoDB()
         mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)
+        mongodb.disconnect()
 
 def create_mysql_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -145,7 +147,8 @@ def drop_database_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date): 
         mongodb = MongoDB()
-        MongoDB.drop_database()
+        mongodb.drop_database()
+        mongodb.disconnect()
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
