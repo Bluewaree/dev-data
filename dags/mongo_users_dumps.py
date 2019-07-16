@@ -27,6 +27,7 @@ from helpers.get_dump_archive_file_path import get_dump_archive_file_path
 from helpers.get_dump_folder_path import get_dump_folder_path
 from helpers.get_previous_dump_date import get_previous_dump_date
 from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
+from helpers.remove_file import remove_file
 
 # importing mongo class for db management
 from database.mongodb import MongoDB
@@ -81,7 +82,6 @@ def restore_dump_process():
         mongodb = MongoDB()
         bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),f'{USERS}.bson')
         mongodb.restore_db(bson_file,USERS_SCHEMA)
-        mongodb.disconnect()
 
 def remove_duplicates_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -105,15 +105,13 @@ def export_users_schema_process():
         export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
         mongodb = MongoDB()
         mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)
-        mongodb.disconnect()
 
 def create_mysql_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         schema_file = f'/{USERS_TEMP}-{SCHEMA}.sql'
-        schema_file = open(schema_file, 'r').read()
         mysql = MySQL()
-        mysql.execute_file(schema_file)
+        mysql.execute_schema_file(schema_file)
         mysql.disconnect()
 
 def restore_users_schema_process():
@@ -132,7 +130,8 @@ def update_mysql_process():
     if is_dump_date_valid(dump_date):
         previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
         mysql = MySQL(previous_mysql_dump_date)
-        mysql.update_users(f"ghtorrent-{USERS_TEMP}")
+        db_name = f"ghtorrent-{USERS_TEMP}"
+        mysql.update_users(db_name)
         mysql.commit()
         mysql.disconnect()
 
@@ -142,13 +141,24 @@ def remove_dump_process():
         dump_folder = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         dump_file = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         remove_dump(dump_file,dump_folder)
+        users_csv_file = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
+        remove_file(users_csv_file)
 
 def drop_database_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date): 
         mongodb = MongoDB()
+        mongodb.connect()
         mongodb.drop_database()
         mongodb.disconnect()
+
+def drop_mysql_schema_process():
+    dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
+    if is_dump_date_valid(dump_date): 
+        mysql = MySQL()
+        db_name = f"ghtorrent-{USERS_TEMP}"
+        mysql.drop_database(db_name)
+        mysql.disconnect()
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
@@ -163,10 +173,11 @@ remove_duplicates_task = PythonOperator(task_id='remove-duplicates', python_call
 remove_documents_with_null_values_task = PythonOperator(task_id='remove-documents-with-null-values', python_callable=remove_documents_with_null_values_process, dag=dag)
 export_users_schema_task = PythonOperator(task_id='export-users-schema', python_callable=export_users_schema_process, dag=dag)
 create_mysql_schema_task = PythonOperator(task_id='create-mysql-schema', python_callable=create_mysql_schema_process, dag=dag)
-restore_users_schema_task = PythonOperator(task_id='restore-users-schema', python_callable=restore_users_schema_process, dag=dag, trigger_rule='all_done')
+restore_users_schema_task = PythonOperator(task_id='restore-users-schema', python_callable=restore_users_schema_process, dag=dag)
 update_mysql_task = PythonOperator(task_id='update-mysql', python_callable=update_mysql_process, dag=dag)
 remove_dump_task = PythonOperator(task_id='remove-dump', python_callable=remove_dump_process, dag=dag)
 drop_database_task = PythonOperator(task_id='drop-database', python_callable=drop_database_process, dag=dag)
+drop_mysql_schema_task = PythonOperator(task_id='drop-mysql-schema', python_callable=drop_mysql_schema_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> remove_documents_with_null_values_task >> export_users_schema_task >> create_mysql_schema_task >> restore_users_schema_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> restore_dump_task >> remove_duplicates_task >> remove_documents_with_null_values_task >> export_users_schema_task >> create_mysql_schema_task >> restore_users_schema_task >> update_mysql_task >> remove_dump_task >> drop_database_task >> drop_mysql_schema_task >> set_next_dump_date_task
