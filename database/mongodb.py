@@ -77,7 +77,7 @@ class MongoDB(object):
     
     def remove_duplicates(self):
         pipeline = [
-                {"$group":{"_id":"$login","count":{"$sum":1},"dups": {"$addToSet": "$_id"}}},
+                {"$group":{"_id":{"$toLower" : "$login"},"count":{"$sum":1},"dups": {"$addToSet": "$_id"}}},
                 { "$project": {
                     "_id": 0,
                     "updated_at":1,
