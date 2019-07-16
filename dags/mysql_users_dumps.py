@@ -30,6 +30,7 @@ from helpers.separate_restoration_mysql import separate_restoration
 from helpers.change_content_in_file import change_content_in_file
 from helpers.copy_file import copy_file
 from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
+from helpers.get_previous_dump_date import get_previous_dump_date
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -81,10 +82,13 @@ def create_schema_process():
     schema_file = open(global_schema_file, 'r').read()
     mysql = MySQL()
     mysql.execute_file(schema_file)
+    mysql.disconnect()
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
+    mysql.add_user_name_column()
+    mysql.add_user_email_column()
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)))
     mysql.optimize_load()
     for mysql_table in mysql_tables:
@@ -94,6 +98,7 @@ def restore_dump_process():
         print(f'-------------- Processing ended ----------------')
     print("----------------- Committing -----------------")
     mysql.commit()
+    mysql.disconnect()
 
 def create_indexes_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
@@ -102,19 +107,18 @@ def create_indexes_process():
     indexes_files = open(dump_indexes_file, 'r').read()
     mysql = MySQL(dump_date)
     mysql.execute_file(indexes_files)
+    mysql.disconnect()
 
 def restore_old_users_data_process():
-    print(test)
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql = MySQL(f"{dump_date}-01")
-    users = mysql.get_all_users()
-    mysql = MySQL(f"{dump_date}-02")
-    mysql.update_users(users,MYSQL)
-    print("----------------- Committing -----------------")
+    mysql = MySQL(f"{dump_date}")
+    previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    db_name = f"ghtorrent-{previous_mysql_dump_date}"
+    mysql.update_users(db_name)
     mysql.commit()
+    mysql.disconnect()
 
 def set_next_dump_date_process():
-    print(test)
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     set_dump_date(MYSQL,ARCHIVES_BASE_FOLDER,dump_date)
 
@@ -123,7 +127,7 @@ def set_next_dump_date_process():
 download_dump_task = PythonOperator(task_id='download-dump', python_callable=download_dump_process, dag=dag)
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
-restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag, trigger_rule='all_done')
+restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag)
 restore_old_users_data_task = PythonOperator(task_id='resrtore-old-users-data', python_callable=restore_old_users_data_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
