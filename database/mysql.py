@@ -89,5 +89,10 @@ class MySQL(object):
         cursor.execute("ALTER TABLE users ADD COLUMN email VARCHAR(255) NULL DEFAULT NULL COMMENT ''")
         cursor.close()
 
+    def create_index_users_login(self):
+        cursor = self._db.cursor()
+        cursor.execute("CREATE UNIQUE INDEX `login` ON `users` (`login` ASC)  COMMENT ''")
+        cursor.close()
+
     def disconnect(self):
         self._db.close()
