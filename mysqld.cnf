@@ -32,7 +32,7 @@ symbolic-links=0
 # SAFETY
 innodb                         = FORCE
 innodb_strict_mode             = 1
-max_allowed_packet             = 16M
+max_allowed_packet             = 1G
 max_connect_errors             = 1000000
 skip_name_resolve
 
@@ -54,7 +54,7 @@ innodb_flush_method            = O_DIRECT
 innodb_flush_log_at_trx_commit = 0
 innodb_file_per_table          = 1
 innodb_log_files_in_group      = 2
-innodb_log_file_size           = 512M
+innodb_log_file_size           = 1536M
 innodb_thread_concurrency      = 0
 innodb_read_io_threads         = 64
 innodb_write_io_threads        = 64
