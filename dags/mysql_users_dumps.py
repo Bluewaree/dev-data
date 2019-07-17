@@ -119,6 +119,15 @@ def restore_old_users_data_process():
         mysql.commit()
         mysql.disconnect()
 
+def drop_old_database_process():
+    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    if dump_date != previous_mysql_dump_date:
+        mysql = MySQL()
+        db_name = f"ghtorrent-{previous_mysql_dump_date}"
+        mysql.drop_database(db_name)
+        mysql.disconnect()
+
 def set_next_dump_date_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     set_dump_date(MYSQL,ARCHIVES_BASE_FOLDER,dump_date)
@@ -131,6 +140,7 @@ create_schema_task = PythonOperator(task_id='create-schema', python_callable=cre
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
 create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag)
 restore_old_users_data_task = PythonOperator(task_id='resrtore-old-users-data', python_callable=restore_old_users_data_process, dag=dag)
+drop_old_database_task = PythonOperator(task_id='drop-old-database', python_callable=drop_old_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> restore_old_users_data_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> restore_old_users_data_task >> drop_old_database_task >> set_next_dump_date_task
