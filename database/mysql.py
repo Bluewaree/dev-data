@@ -19,7 +19,7 @@ class MySQL(object):
     def __init__(self,dump_date = None):
 
         if dump_date is not None:
-            db_name = f"{DATABASE_NAME}{dump_date}"
+            db_name = f"{DATABASE_NAME}-{dump_date}"
             print(f"--------------- Connection with db {db_name} ------------------")
             self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = db_name, charset="utf8")
         else :
@@ -75,7 +75,7 @@ class MySQL(object):
         cursor.execute(file_to_execute)
         cursor.close()
     def execute_schema_file(self,file_to_execute):
-        cursor = self._db.cursor
+        cursor = self._db.cursor()
         statement = ""
         fk = ""
         if os.path.exists('foreign_key.sql'):
