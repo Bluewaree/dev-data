@@ -111,12 +111,13 @@ def create_indexes_process():
 
 def restore_old_users_data_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql = MySQL(f"{dump_date}")
     previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     db_name = f"ghtorrent-{previous_mysql_dump_date}"
-    mysql.update_users(db_name)
-    mysql.commit()
-    mysql.disconnect()
+    if dump_date != previous_mysql_dump_date:
+        mysql = MySQL(f"{dump_date}")
+        mysql.update_users(db_name)
+        mysql.commit()
+        mysql.disconnect()
 
 def set_next_dump_date_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
