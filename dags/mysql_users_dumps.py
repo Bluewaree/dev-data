@@ -31,6 +31,7 @@ from helpers.change_content_in_file import change_content_in_file
 from helpers.copy_file import copy_file
 from helpers.get_dump_folder_endpoint import get_dump_folder_endpoint
 from helpers.get_previous_dump_date import get_previous_dump_date
+from helpers.separate_load import separate_load
 
 # importing mongo class for db management
 from database.mysql import MySQL
@@ -79,26 +80,16 @@ def create_schema_process():
     global_schema_file = f'/{SCHEMA}.sql'
     change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_schema_file)
     copy_file(dump_schema_file,global_schema_file)
-    schema_file = open(global_schema_file, 'r').read()
+    change_content_in_file(f"ghtorrent-{dump_date}","ghtorrent",dump_schema_file)
     mysql = MySQL()
-    mysql.execute_file(schema_file)
+    mysql.execute_schema_file(global_schema_file)
     mysql.disconnect()
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql = MySQL(dump_date)
-    mysql.add_user_name_column()
-    mysql.add_user_email_column()
     mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)))
-    mysql.optimize_load()
-    for mysql_table in mysql_tables:
-        print(f'-------------- Processing {mysql_table} ----------------')
-        csv_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),'{0}.csv'.format(mysql_table))
-        mysql.restore_db(csv_file,mysql_table)
-        print(f'-------------- Processing ended ----------------')
-    print("----------------- Committing -----------------")
-    mysql.commit()
-    mysql.disconnect()
+    dump_folder_endpoint = get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
+    separate_load(dump_date,dump_folder_endpoint,dump_date)
 
 def create_indexes_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
