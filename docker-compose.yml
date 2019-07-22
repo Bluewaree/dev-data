@@ -10,7 +10,7 @@ services:
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:  
-      - ./mysqld.cnf:/etc/mysql.conf.d/mysqld.cnf 
+      - ./mysqld.cnf:/etc/mysql/my.cnf 
     env_file:
       - .env
   mongo:
