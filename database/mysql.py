@@ -19,23 +19,21 @@ class MySQL(object):
     def __init__(self,dump_date = None):
 
         if dump_date is not None:
-            db_name = f"{DATABASE_NAME}-{dump_date}"
-            print(f"--------------- Connection with db {db_name} ------------------")
-            self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = db_name, charset="utf8")
+            self.db_name = f"{DATABASE_NAME}-{dump_date}"
+            print(f"--------------- Connection with db {self.db_name} ------------------")
+            self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], db = self.db_name, charset="utf8")
         else :
             self._db = MySQLdb.connect(host = MYSQL_DB['host'],user = MYSQL_DB['user'], passwd = MYSQL_DB['pass'], charset="utf8")
 
     def optimize_load(self):
         cursor = self._db.cursor()
-        cursor.execute("SELECT @@foreign_key_checks;")
-        print(cursor.fetchone())
         cursor.execute("set autocommit = 0;set unique_checks = 0;set foreign_key_checks = 0;set sql_log_bin=0;")
+        cursor.execute("SET SESSION transaction_isolation='READ-UNCOMMITTED';")
+        cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;")
         cursor.close()
 
     def restore_db(self, csv_file, table_name):
         cursor = self._db.cursor()
-        cursor.execute("SELECT @@foreign_key_checks;")
-        print(cursor.fetchone())
         cursor.execute("load data local infile '{0}' \
                         into table {1} \
                         CHARACTER SET UTF8 \
@@ -74,39 +72,43 @@ class MySQL(object):
         cursor = self._db.cursor()
         cursor.execute(file_to_execute)
         cursor.close()
+
     def execute_schema_file(self,file_to_execute):
         cursor = self._db.cursor()
         statement = ""
         fk = ""
-        if os.path.exists('foreign_key.sql'):
-            fk_file = open('foreign_key.sql','a')
-        else:
-            fk_file = open('foreign_key.sql','w')
+        fk_file = open('foreign_key.sql','w')
         for line in open(file_to_execute):
-            if re.search('CREATE TABLE', line):
+            if re.search('CREATE TABLE', line.strip("\m")):
+                line = line.rstrip('\n')
                 table_name = line.split('`')[-2]
                 fk = f"alter table {table_name} add "
+            if re.match(r'--', line):  # ignore sql comment lines
                 continue
+            if re.search('CONSTRAINT', line) or re.search('FOREIGN KEY', line):
+                line = line.rstrip('\n')
+                fk += line
+                continue
+            if re.search('REFERENCES', line):
+                line = f"{line[:-2]};"
+                fk += line
+                if fk[-1] == ';':
+                    fk_file.write(f"{fk}\n")
+                else:
+                   fk_file.write(f"{fk}")                 
+                fk = f"alter table {table_name} add "
+                continue
+            if re.search('ENGINE',line):
+                if statement[-2] == ',':
+                    statement = f"{statement[:-2]}){statement[-1]}"
             if not re.search(r';$', line):  # keep appending lines that don't end in ';'
                 statement = statement + line
             else:  # when you get a line ending in ';' then exec statement and reset for  next statement
                 statement = statement + line
                 cursor.execute(statement)
                 statement = ""
-            if re.match(r'--', line):  # ignore sql comment lines
-                continue
-            if re.search('CONSTRAINT', line) or re.search('FOREIGN KEY', line):
-                fk += line
-                continue
-            if re.search('REFERENCES', line):
-                if not re.search(',',line):
-                    line = f"{line[:-2]};"
-                fk += line
-                fk_file.write(f"{fk}\n")
-                fk = ""
-                continue
-        fk_file.close()
-        cursor.close()
+        fk_file.close()   
+
     def get_all_users(self):
         cursor = self._db.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("SELECT login,name,email FROM users limit 100000")
