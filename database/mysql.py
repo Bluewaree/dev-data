@@ -79,7 +79,7 @@ class MySQL(object):
         statement = ""
         fk = ""
         fk_file = open(FOREIGN_KEYS_FILE,'w')
-        for line in open(file_to_execute):
+        for line in open(file_to_execute): # Remove foreign keys lines before statement execution
             if re.search('CREATE TABLE', line.strip("\m")):
                 line = line.rstrip('\n')
                 table_name = line.split('`')[-2]
