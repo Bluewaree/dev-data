@@ -87,7 +87,7 @@ def create_schema_process():
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql_tables = ["project_topics","organization_members","issue_labels","project_members","commit_comments","followers","pull_requests","users"]
+    mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)))
     dump_folder_endpoint = get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
     separate_load(dump_date,dump_folder_endpoint,mysql_tables)
 
