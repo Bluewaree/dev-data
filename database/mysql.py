@@ -11,6 +11,7 @@ from helpers.format_string import format_string
 config = ConfigParser()
 config.read('config.ini')
 
+FOREIGN_KEYS_FILE = config['files']['foreign_keys']
 MYSQL_DB = config['mysql']
 
 DATABASE_NAME = MYSQL_DB['name']
@@ -77,7 +78,7 @@ class MySQL(object):
         cursor = self._db.cursor()
         statement = ""
         fk = ""
-        fk_file = open('foreign_key.sql','w')
+        fk_file = open(FOREIGN_KEYS_FILE,'w')
         for line in open(file_to_execute):
             if re.search('CREATE TABLE', line.strip("\m")):
                 line = line.rstrip('\n')

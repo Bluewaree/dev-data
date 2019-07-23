@@ -39,7 +39,11 @@ from database.mysql import MySQL
 config = ConfigParser()
 config.read('config.ini')
 
-ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
+FOREIGN_KEYS_FILE = config['files']['foreign_keys']
+SCHEMA_FILE = config['files']['schema']
+INDEXES_FILE = config['files']['indexes']
+ARCHIVES_BASE_FOLDER = const.GHTORRENT
+GHTORRENT = const.GHTORRENT
 MYSQL = const.MYSQL
 SCHEMA = const.SCHEMA
 INDEXES = const.INDEXES
@@ -77,12 +81,11 @@ def extract_file_process():
 def create_schema_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     dump_schema_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),f'{SCHEMA}.sql')
-    global_schema_file = f'/{SCHEMA}.sql'
-    change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_schema_file)
-    copy_file(dump_schema_file,global_schema_file)
-    change_content_in_file(f"ghtorrent-{dump_date}","ghtorrent",dump_schema_file)
+    change_content_in_file(GHTORRENT,f"{GHTORRENT}-{dump_date}",dump_schema_file)
+    copy_file(dump_schema_file,SCHEMA_FILE)
+    change_content_in_file(f"{GHTORRENT}-{dump_date}",GHTORRENT,dump_schema_file)
     mysql = MySQL()
-    mysql.execute_schema_file(global_schema_file)
+    mysql.execute_schema_file(SCHEMA_FILE)
     mysql.disconnect()
 
 def restore_dump_process():
@@ -95,16 +98,17 @@ def add_foreign_keys_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     mysql = MySQL(dump_date)
     mysql.optimize_load()
-    foreign_key_file = open("foreign_key.sql", 'r').read()
+    foreign_key_file = open(FOREIGN_KEYS_FILE, 'r').read()
     mysql.execute_file(foreign_key_file)
     mysql.disconnect()
 
 def create_indexes_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     dump_indexes_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),f'{INDEXES}.sql')
-    change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_indexes_file)
-    indexes_files = open(dump_indexes_file, 'r').read()
-    change_content_in_file(f"ghtorrent-{dump_date}","ghtorrent",dump_indexes_file)
+    change_content_in_file(GHTORRENT,f"{GHTORRENT}-{dump_date}",dump_indexes_file)
+    copy_file(dump_indexes_file,INDEXES_FILE)
+    change_content_in_file(f"{GHTORRENT}-{dump_date}",GHTORRENT,dump_indexes_file)
+    indexes_files = open(INDEXES_FILE, 'r').read()
     mysql = MySQL(dump_date)
     mysql.execute_file(indexes_files)
     mysql.disconnect()
@@ -112,7 +116,7 @@ def create_indexes_process():
 def restore_old_users_data_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    db_name = f"ghtorrent-{previous_mysql_dump_date}"
+    db_name = f"{GHTORRENT}-{previous_mysql_dump_date}"
     if dump_date != previous_mysql_dump_date:
         mysql = MySQL(f"{dump_date}")
         mysql.update_users(db_name)
@@ -124,7 +128,7 @@ def drop_old_database_process():
     previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
     if dump_date != previous_mysql_dump_date:
         mysql = MySQL()
-        db_name = f"ghtorrent-{previous_mysql_dump_date}"
+        db_name = f"{GHTORRENT}-{previous_mysql_dump_date}"
         mysql.drop_database(db_name)
         mysql.disconnect()
 

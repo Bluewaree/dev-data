@@ -36,7 +36,8 @@ from database.mysql import MySQL
 config = ConfigParser()
 config.read('config.ini')
 
-ARCHIVES_BASE_FOLDER = config['archives']['ghtorrent']
+ARCHIVES_BASE_FOLDER = const.GHTORRENT
+GHTORRENT = const.GHTORRENT
 MONGO = const.MONGO
 MYSQL = const.MYSQL
 MONGO_DUMPS_START_DATE = const.DUMPS_START_DATE[MONGO]
@@ -130,7 +131,7 @@ def update_mysql_process():
     if is_dump_date_valid(dump_date):
         previous_mysql_dump_date = get_previous_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
         mysql = MySQL(previous_mysql_dump_date)
-        db_name = f"ghtorrent-{USERS_TEMP}"
+        db_name = f"{GHTORRENT}-{USERS_TEMP}"
         mysql.update_users(db_name)
         mysql.commit()
         mysql.disconnect()
@@ -156,7 +157,7 @@ def drop_mysql_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date): 
         mysql = MySQL()
-        db_name = f"ghtorrent-{USERS_TEMP}"
+        db_name = f"{GHTORRENT}-{USERS_TEMP}"
         mysql.drop_database(db_name)
         mysql.disconnect()
 
