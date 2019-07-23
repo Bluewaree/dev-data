@@ -8,5 +8,7 @@ host = localhost
 port = 27017
 name = database
 
-[archives]
-ghtorrent = /ghtorrent
+[files]
+foreign_keys = foreign_keys.sql
+schema = /schema.sql
+indexes = /indexes.sql
