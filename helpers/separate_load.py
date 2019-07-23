@@ -22,6 +22,7 @@ def process(table):
     csv_file = f"{file_destination}/{table}.csv"
     mysql.restore_db(csv_file,table)
     print(f"finished processing file {table}")
+    mysql.commit()
     mysql.disconnect()
 
 
