@@ -103,9 +103,9 @@ def remove_documents_with_null_values_process():
 def export_users_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):        
-        export_destinqtion = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
+        export_destination = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
         mongodb = MongoDB()
-        mongodb.export_users_schema(export_destinqtion,USERS_SCHEMA)
+        mongodb.export_users_schema(export_destination,USERS_SCHEMA)
 
 def create_mysql_schema_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
