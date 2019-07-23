@@ -87,9 +87,17 @@ def create_schema_process():
 
 def restore_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
-    mysql_tables = get_mysql_table_names(os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)))
+    mysql_tables = ["project_topics","organization_members","issue_labels","project_members","commit_comments","followers","pull_requests","users"]
     dump_folder_endpoint = get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date)
-    separate_load(dump_date,dump_folder_endpoint,dump_date)
+    separate_load(dump_date,dump_folder_endpoint,mysql_tables)
+
+def add_foreign_keys_process():   
+    dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
+    mysql = MySQL(dump_date)
+    mysql.optimize_load()
+    foreign_key_file = open("foreign_key.sql", 'r').read()
+    mysql.execute_file(foreign_key_file)
+    mysql.disconnect()
 
 def create_indexes_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
@@ -129,9 +137,10 @@ download_dump_task = PythonOperator(task_id='download-dump', python_callable=dow
 extract_file_task = PythonOperator(task_id='extract-file', python_callable=extract_file_process, dag=dag)
 create_schema_task = PythonOperator(task_id='create-schema', python_callable=create_schema_process, dag=dag)
 restore_dump_task = PythonOperator(task_id='restore-dump', python_callable=restore_dump_process, dag=dag)
+add_foreign_keys_task = PythonOperator(task_id='add-foreign-keys', python_callable=add_foreign_keys_process, dag=dag)
 create_indexes_task = PythonOperator(task_id='create-indexes', python_callable=create_indexes_process, dag=dag)
 restore_old_users_data_task = PythonOperator(task_id='resrtore-old-users-data', python_callable=restore_old_users_data_process, dag=dag)
 drop_old_database_task = PythonOperator(task_id='drop-old-database', python_callable=drop_old_database_process, dag=dag)
 set_next_dump_date_task = PythonOperator(task_id='set-next-dump-date', python_callable=set_next_dump_date_process, dag=dag)
 
-download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> create_indexes_task >> restore_old_users_data_task >> drop_old_database_task >> set_next_dump_date_task
+download_dump_task >> extract_file_task >> create_schema_task >> restore_dump_task >> add_foreign_keys_task >> create_indexes_task >> restore_old_users_data_task >> drop_old_database_task >> set_next_dump_date_task
