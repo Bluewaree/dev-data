@@ -86,6 +86,8 @@ def create_schema_process():
     change_content_in_file(f"{GHTORRENT}-{dump_date}",GHTORRENT,dump_schema_file)
     mysql = MySQL()
     mysql.execute_schema_file(SCHEMA_FILE)
+    mysql.add_user_name_column()
+    mysql.add_user_email_column()
     mysql.disconnect()
 
 def restore_dump_process():
