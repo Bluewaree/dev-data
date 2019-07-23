@@ -104,6 +104,7 @@ def create_indexes_process():
     dump_indexes_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MYSQL,dump_date),f'{INDEXES}.sql')
     change_content_in_file("ghtorrent",f"ghtorrent-{dump_date}",dump_indexes_file)
     indexes_files = open(dump_indexes_file, 'r').read()
+    change_content_in_file(f"ghtorrent-{dump_date}","ghtorrent",dump_indexes_file)
     mysql = MySQL(dump_date)
     mysql.execute_file(indexes_files)
     mysql.disconnect()
