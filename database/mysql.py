@@ -93,10 +93,7 @@ class MySQL(object):
             if re.search('REFERENCES', line):
                 line = f"{line[:-2]};"
                 fk += line
-                if fk[-1] == ';':
-                    fk_file.write(f"{fk}\n")
-                else:
-                   fk_file.write(f"{fk}")                 
+                fk_file.write(f"{fk}\n")            
                 fk = f"alter table {table_name} add "
                 continue
             if re.search('ENGINE',line):
