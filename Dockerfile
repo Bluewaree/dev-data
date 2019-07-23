@@ -75,8 +75,10 @@ COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.config
 COPY users-temp-schema.sql /users-temp-schema.sql
 
 RUN touch schema.sql
+RUN touch indexes.sql
 RUN ["chmod", "+x", "/entrypoint.sh"]
 RUN ["chmod", "777", "/schema.sql"]
+RUN ["chmod", "777", "/indexes.sql"]
 RUN ["chmod", "777", "/users-temp-schema.sql"]
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
 
