@@ -76,6 +76,8 @@ COPY users-temp-schema.sql /users-temp-schema.sql
 
 RUN touch schema.sql
 RUN touch indexes.sql
+RUN mkdir ${AIRFLOW_USER_HOME}/ghtorrent
+
 RUN ["chmod", "+x", "/entrypoint.sh"]
 RUN ["chmod", "777", "/schema.sql"]
 RUN ["chmod", "777", "/indexes.sql"]
