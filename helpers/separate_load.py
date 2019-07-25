@@ -12,10 +12,10 @@ config.read('config.ini')
 
 MYSQL_DB = config['mysql']
 
-def process(table):
-    global dump_date
-    global file_destination
+dump_date = ""
+file_destination = ""
 
+def process(table):
     mysql = MySQL(dump_date)
     mysql.optimize_load()
     print(f"processing table {table}")
@@ -27,9 +27,6 @@ def process(table):
 
 
 def separate_load(date, destination, tables):
-    global dump_date
-    global file_destination
-
     dump_date = date
     file_destination = destination
     with Pool(12) as pool:
