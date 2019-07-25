@@ -71,7 +71,6 @@ RUN set -ex \
         /usr/share/doc-base 
 
 COPY script/entrypoint.sh /entrypoint.sh
-COPY config/airflow.cfg ${AIRFLOW_USER_HOME}/airflow.config
 COPY users-temp-schema.sql /users-temp-schema.sql
 
 RUN touch schema.sql
@@ -79,9 +78,6 @@ RUN touch indexes.sql
 RUN mkdir ${AIRFLOW_USER_HOME}/ghtorrent
 
 RUN ["chmod", "+x", "/entrypoint.sh"]
-RUN ["chmod", "777", "/schema.sql"]
-RUN ["chmod", "777", "/indexes.sql"]
-RUN ["chmod", "777", "/users-temp-schema.sql"]
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
 
 EXPOSE 8080 5555 8793
