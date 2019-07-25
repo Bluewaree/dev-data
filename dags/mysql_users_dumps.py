@@ -4,12 +4,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime, timedelta
 from configparser import ConfigParser
-
 import os
-import sys
-from pathlib import Path
-home = str(Path.home())
-sys.path.append(home)
 
 # importing constants
 import constants.constants as const
