@@ -38,7 +38,7 @@ services:
       - mysql
     environment:
       - LOAD_EX=n
-      - EXECUTOR=Local
+      - EXECUTOR=Celery
     volumes:
       - ./dags:/usr/local/airflow/dags
       - ./requirements.txt:/requirements.txt
