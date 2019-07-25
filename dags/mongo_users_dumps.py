@@ -50,23 +50,21 @@ SCHEMA = const.SCHEMA
 default_args = {
     'owner': 'airflow',
     'wait_for_downstream': True,
-    'depends_on_past': True,
     'start_date': datetime.strptime(MONGO_DUMPS_START_DATE, "%Y-%m-%d"),
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 3,
-    'retry_delay': timedelta(minutes=1),
 }
 
 # Defining DAG
-dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1),max_active_runs=1) 
+dag = DAG('mongo_users_dump', default_args=default_args, schedule_interval=timedelta(days=1)) 
 
 def download_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date):
         url = make_dump_url(dump_date,MONGO,USERS)
         destination_path = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
+        print(f"--------- Downloading {dump_date} dump ---------")
         download_dump(url,destination_path)
 
 def extract_file_process():
@@ -75,6 +73,7 @@ def extract_file_process():
         destination_path = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
         create_folder(destination_path)
         dump_file_to_extract = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
+        print(f"--------- Extracting {dump_date} dump ---------")
         extract_file(dump_file_to_extract,destination_path)
 
 def restore_dump_process():
@@ -82,6 +81,7 @@ def restore_dump_process():
     if is_dump_date_valid(dump_date):
         mongodb = MongoDB()
         bson_file = os.path.join(get_dump_folder_endpoint(ARCHIVES_BASE_FOLDER,MONGO,dump_date),f'{USERS}.bson')
+        print(f"--------- Restoring {dump_date} dump ---------")
         mongodb.restore_db(bson_file,USERS_SCHEMA)
 
 def remove_duplicates_process():
@@ -140,7 +140,8 @@ def remove_dump_process():
     dump_date = get_dump_date(MONGO,ARCHIVES_BASE_FOLDER)
     if is_dump_date_valid(dump_date): 
         dump_folder = get_dump_folder_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
-        dump_file = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)
+        dump_file = get_dump_archive_file_path(ARCHIVES_BASE_FOLDER,MONGO,dump_date)        
+        print(f"--------- Removing {dump_date} dump ---------")
         remove_dump(dump_file,dump_folder)
         users_csv_file = os.path.join(ARCHIVES_BASE_FOLDER,f"{MONGO}-{USERS}-{dump_date}.csv")
         remove_file(users_csv_file)
