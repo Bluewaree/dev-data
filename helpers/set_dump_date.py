@@ -13,7 +13,7 @@ def set_dump_date(database_type,archives_base_folder,current_dump_date):
     if database_type==const.MONGO: # Add 1 day if Mongo dump
         next_dump_date = datetime.strptime(current_dump_date, "%Y-%m-%d").date()
     else: # Add 1 month if Mysql dump
-        next_dump_date = (datetime.strptime(current_dump_date, "%Y-%m-%d").date()
+        next_dump_date = (datetime.strptime(current_dump_date, "%Y-%m-%d").date() + relativedelta(months=1)).replace(day=1)
 
     with open(dump_date_file_path,"w+") as file:
         file.write(next_dump_date.strftime("%Y-%m-%d"))
