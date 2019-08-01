@@ -56,7 +56,7 @@ default_args = {
 }
 
 # Defining DAG
-dag = DAG('mysql_users_dump', default_args=default_args, schedule_interval='@monthly',max_active_runs=1)
+dag = DAG('mysql_users_dump', default_args=default_args, schedule_interval='@once',max_active_runs=1)
 
 def download_dump_process():
     dump_date = get_dump_date(MYSQL,ARCHIVES_BASE_FOLDER)
